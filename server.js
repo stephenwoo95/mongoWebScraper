@@ -25,8 +25,9 @@ app.use(bodyParser.urlencoded({
 // Make public a static dir
 app.use(express.static("public"));
 
+//mongodb://heroku_z0j7bzpb:nu6gt7dk1av56tg1o66rpevhc9@ds133814.mlab.com:33814/heroku_z0j7bzpb
 // Database configuration with mongoose
-mongoose.connect("mongodb://heroku_z0j7bzpb:nu6gt7dk1av56tg1o66rpevhc9@ds133814.mlab.com:33814/heroku_z0j7bzpb");
+mongoose.connect("mongodb://localhost/mongoScraper");
 var db = mongoose.connection;
 
 // Show any mongoose errors
@@ -44,6 +45,19 @@ db.once("open", function() {
 
 // Routes
 // ======
+app.get("/", function(req, res) {
+  Article.find({}, function(error, data) {
+    if(error) {
+      res.send(error);
+    } else {
+      var hbsObject = {
+        Articles: data
+      };
+      console.log(hbsObject);
+      res.render("index", hbsObject);
+    }
+  });
+});
 
 // A GET request to scrape the hacker news website
 app.get("/scrape", function(req, res) {
@@ -52,7 +66,7 @@ app.get("/scrape", function(req, res) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(html);
     // Now, we grab every h2 within an article tag, and do the following:
-    $("article h2").each(function(i, element) {
+    $("h2.post-title").each(function(i, element) {
 
       // Save an empty result object
       var result = {};
@@ -60,6 +74,7 @@ app.get("/scrape", function(req, res) {
       // Add the text and href of every link, and save them as properties of the result object
       result.title = $(this).children("a").text();
       result.link = $(this).children("a").attr("href");
+      result.summary = $(this).siblings("p.excerpt").text();
 
       // Using our Article model, create a new entry
       // This effectively passes the result object to the entry (and the title and link)
@@ -80,48 +95,23 @@ app.get("/scrape", function(req, res) {
     });
   });
   // Tell the browser that we finished scraping the text
-  res.send("Scrape Complete");
-});
-
-// This will get the articles we scraped from the mongoDB
-app.get("/articles", function(req, res) {
-  Article.find({}, function(error, data) {
-    if(error) {
-      res.send(error);
-    } else {
-      res.json(data);
-    }
-  });
-
-  // TODO: Finish the route so it grabs all of the articles
-
+  res.redirect("/");
 });
 
 // This will grab an article by it's ObjectId
 app.get("/articles/:id", function(req, res) {
-  Article.findById(req.params.id).populate("note").exec(function(error, data) {
+  Article.findById(req.params.id).populate("comment").exec(function(error, data) {
     if(error) {
       res.send(error);
     } else {
-      res.json(data);
+      res.render("index",{Article: data});
     }
   });
-
-  // TODO
-  // ====
-
-  // Finish the route so it finds one article using the req.params.id,
-
-  // and run the populate method with "note",
-
-  // then responds with the article with the note included
-
-
 });
 
-// Create a new note or replace an existing note
+// Create a new comment or replace an existing comment
 app.post("/articles/:id", function(req, res) {
-  var entry = new Note(req.body);
+  var entry = new Comment(req.body);
   entry.save(function(err, doc) {
     // Log any errors
     if (err) {
@@ -129,8 +119,8 @@ app.post("/articles/:id", function(req, res) {
     }
     // Or log the doc
     else {
-      // Find our user and push the new note id into the User's notes array
-      Article.findByIdAndUpdate(req.params.id, { $set: { "note": doc._id } }, { new: true }, function(err, newdoc) {
+      // Find our user and push the new comment id into the User's comments array
+      Article.findByIdAndUpdate(req.params.id, { $set: { "comment": doc._id } }, { new: true }, function(err, newdoc) {
         // Send any errors to the browser
         if (err) {
           res.send(err);
@@ -142,16 +132,6 @@ app.post("/articles/:id", function(req, res) {
       });
     }
   });
-  // TODO
-  // ====
-
-  // save the new note that gets posted to the Notes collection
-
-  // then find an article from the req.params.id
-
-  // and update it's "note" property with the _id of the new note
-
-
 });
 
 
