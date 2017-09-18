@@ -45,13 +45,14 @@ db.once("open", function() {
 
 // Routes
 // ======
-app.get("/", function(req, res) {
+app.get("/:count?", function(req, res) {
   Article.find({}, function(error, data) {
     if(error) {
       res.send(error);
     } else {
       var hbsObject = {
-        Articles: data
+        Articles: data,
+        count: req.params.count
       };
       console.log(hbsObject);
       res.render("index", hbsObject);
@@ -60,8 +61,9 @@ app.get("/", function(req, res) {
 });
 
 // A GET request to scrape the hacker news website
-app.get("/scrape", function(req, res) {
+app.get("/api/scrape", function(req, res) {
   // First, we grab the body of the html with request
+  var count = 0;
   request("http://www.techcrunch.com/", function(error, response, html) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(html);
@@ -78,24 +80,16 @@ app.get("/scrape", function(req, res) {
 
       // Using our Article model, create a new entry
       // This effectively passes the result object to the entry (and the title and link)
-      var entry = new Article(result);
 
-      // Now, save that entry to the db
-      entry.save(function(err, doc) {
-        // Log any errors
-        if (err) {
-          console.log(err);
-        }
-        // Or log the doc
-        else {
-          console.log(doc);
+      Article.findOneAndUpdate({title: result.title}, result, {upsert: true, new:true, passRawResult: true}, function(err,numberAffected,rawResponse) {
+        if(!rawResponse.lastErrorObject.updatedExisting) {
+          count++;
         }
       });
-
     });
   });
   // Tell the browser that we finished scraping the text
-  res.redirect("/");
+  res.redirect("/"+count);
 });
 
 // This will grab an article by it's ObjectId
