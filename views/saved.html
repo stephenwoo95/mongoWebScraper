@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<script src="https://code.jquery.com/jquery-3.2.1.min.js"
+		integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+		crossorigin="anonymous"></script>
+  	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<link rel="stylesheet" href="/assets/css/style.css" type="text/css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+		<title>Tech Crunch Mongo Webscraper | Saved</title>
+	</head>
+	<body>
+    <div class="navbar-fixed">
+      <nav>
+        <div class="nav-wrapper blue">
+          <a href="/" class="brand-logo"> <i class="material-icons">search</i> Mongo News Scraper</a>
+          <a href="#" data-activates="mobile" class="button-collapse"><i class="material-icons">menu</i></a>
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="/">Home</a></li>
+            <li><a href="/saved">Saved Articles</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <ul class="side-nav" id="mobile">
+      <li><a href="/">Home</a></li>
+      <li><a href="/saved">Saved Articles</a></li>
+      <li><a class="waves-effect waves-light btn red" id="scrape"><i class="material-icons left">add</i>Scrape New Articles</a></li>
+    </ul>
+    <ul class='collection'>
+    </ul>
+
+    <!-- Modal Structure -->
+    <div id="commentsModal" class="modal modal-fixed-footer">
+			<div class="modal-header">
+			</div>
+      <div class="modal-content"> 
+        <h4></h4>
+        <hr />
+        <ul class='collection' id='commentsCollection'>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <textarea rows='4' cols='100' placeholder='Add a comment' id="commentText"></textarea>
+        <button class="waves-effect waves-light btn green" id="commentSubmit">Submit</button>
+        <a href="#!" class="modal-action modal-close waves-effect waves-red btn-flat">Close</a>
+      </div>
+    </div>
+
+    <script src="/assets/js/saved.js"></script>
+	</body>
+</html>
