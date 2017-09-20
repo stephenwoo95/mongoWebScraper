@@ -23,7 +23,7 @@ app.use(express.static("public"));
 
 //mongodb://heroku_z0j7bzpb:nu6gt7dk1av56tg1o66rpevhc9@ds133814.mlab.com:33814/heroku_z0j7bzpb
 // Database configuration with mongoose
-mongoose.connect("mongodb://localhost/mongoScraper");
+mongoose.connect("mongodb://heroku_z0j7bzpb:nu6gt7dk1av56tg1o66rpevhc9@ds133814.mlab.com:33814/heroku_z0j7bzpb");
 var db = mongoose.connection;
 
 // Show any mongoose errors
