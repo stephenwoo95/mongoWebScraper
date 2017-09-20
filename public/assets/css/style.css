@@ -1,0 +1,25 @@
+.saveBtn, .deleteArticle, .addComment, .deleteComment {
+  float: right;
+}
+
+.deleteComment {
+  position: relative;
+  bottom: 5px;
+  z-index: 0;
+}
+
+.addComment {
+  margin-right: 10px;
+}
+
+.btn-floating {
+  float: right;
+}
+
+.modal-footer {
+  height: auto !important;
+}
+
+textarea {
+  resize: none;
+}

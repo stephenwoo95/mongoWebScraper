@@ -1,9 +1,8 @@
 var express = require("express");
-var exphbs = require("express-handlebars");
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
+var path = require("path");
 // Requiring our User, Article, Comments models
-var User = require("./models/User.js");
 var Comment = require("./models/Comment.js");
 var Article = require("./models/Article.js");
 // Our scraping tools
@@ -14,9 +13,6 @@ mongoose.Promise = Promise;
 
 // Initialize Express
 var app = express();
-
-app.engine("handlebars", exphbs({ defaultLayout: "main" }));
-app.set("view engine", "handlebars");
 
 app.use(bodyParser.urlencoded({
   extended: false
@@ -41,35 +37,36 @@ db.once("open", function() {
 });
 
 
-
-
 // Routes
 // ======
-app.get("/:count?", function(req, res) {
-  Article.find({}, function(error, data) {
-    if(error) {
-      res.send(error);
-    } else {
-      var hbsObject = {
-        Articles: data,
-        count: req.params.count
-      };
-      console.log(hbsObject);
-      res.render("index", hbsObject);
+app.get("/", function(req, res) {
+  res.sendFile(path.join(__dirname, "./views/index.html"))
+});
+
+app.get("/articles", function(req, res) {
+  // Grab every doc in the Articles array
+  Article.find({}, function(error, doc) {
+    // Log any errors
+    if (error) {
+      console.log(error);
+    }
+    // Or send the doc to the browser as a json object
+    else {
+      res.json(doc);
     }
   });
 });
 
 // A GET request to scrape the hacker news website
-app.get("/api/scrape", function(req, res) {
+app.get("/scrape", function(req, res) {
   // First, we grab the body of the html with request
-  var count = 0;
   request("http://www.techcrunch.com/", function(error, response, html) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(html);
     // Now, we grab every h2 within an article tag, and do the following:
+    var articles = [];
+    var message = {};
     $("h2.post-title").each(function(i, element) {
-
       // Save an empty result object
       var result = {};
 
@@ -78,34 +75,65 @@ app.get("/api/scrape", function(req, res) {
       result.link = $(this).children("a").attr("href");
       result.summary = $(this).siblings("p.excerpt").text();
 
-      // Using our Article model, create a new entry
-      // This effectively passes the result object to the entry (and the title and link)
+      articles.push(result);
 
-      Article.findOneAndUpdate({title: result.title}, result, {upsert: true, new:true, passRawResult: true}, function(err,numberAffected,rawResponse) {
-        if(!rawResponse.lastErrorObject.updatedExisting) {
-          count++;
-        }
-      });
+      if(i == $("h2.post-title").length-1) {
+        Article.collection.insertMany(articles, {ordered:false}, function(err, docs) {
+          if(!docs || docs.insertedCount == 0) {
+            message.message = 'No new articles to scrape.';
+          } else {
+            message.message = docs.insertedCount + ' new articles scraped.';
+          }
+          res.json(message);
+        });
+      }
     });
   });
-  // Tell the browser that we finished scraping the text
-  res.redirect("/"+count);
+});
+
+app.get("/saved", function(req, res) {
+    res.sendFile(path.join(__dirname, "./views/saved.html"))
+});
+
+// This will save an article
+app.get("/saved/:id", function(req, res) {
+  Article.findByIdAndUpdate(req.params.id, {$set: {saved: true}}, function(err, doc) {
+    res.end();
+  });
+});
+
+app.get("/saved/articles/get", function(req, res) {
+  Article.find({saved: true}, function(err, doc) {
+    if(err) {
+      res.send(err);
+    }
+    res.json(doc);
+  });
+});
+
+app.get("/saved/delete/:id", function(req, res) {
+  Article.findByIdAndUpdate(req.params.id, {saved: false}, function(err, doc) {
+    if(err) throw err;
+    res.end();
+  });
 });
 
 // This will grab an article by it's ObjectId
 app.get("/articles/:id", function(req, res) {
-  Article.findById(req.params.id).populate("comment").exec(function(error, data) {
+  Article.findById(req.params.id).populate("comments").exec(function(error, data) {
     if(error) {
       res.send(error);
     } else {
-      res.render("index",{Article: data});
+      res.json(data);
     }
   });
 });
 
 // Create a new comment or replace an existing comment
 app.post("/articles/:id", function(req, res) {
+  console.log(req.body);
   var entry = new Comment(req.body);
+  console.log(entry);
   entry.save(function(err, doc) {
     // Log any errors
     if (err) {
@@ -114,7 +142,7 @@ app.post("/articles/:id", function(req, res) {
     // Or log the doc
     else {
       // Find our user and push the new comment id into the User's comments array
-      Article.findByIdAndUpdate(req.params.id, { $set: { "comment": doc._id } }, { new: true }, function(err, newdoc) {
+      Article.findByIdAndUpdate(req.params.id, { $push: { "comments": doc._id } }, { new: true }, function(err, newdoc) {
         // Send any errors to the browser
         if (err) {
           res.send(err);
@@ -128,6 +156,15 @@ app.post("/articles/:id", function(req, res) {
   });
 });
 
+app.get("/delete/:id", function(req, res) {
+  Comment.remove({_id:req.params.id}, function(err, data) {
+    if(err) {
+      res.send(err);
+    } else {
+      res.end();
+    }
+  });
+});
 
 // Listen on port 3000
 app.listen(3000, function() {
