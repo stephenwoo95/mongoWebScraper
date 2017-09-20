@@ -21,9 +21,8 @@ app.use(bodyParser.urlencoded({
 // Make public a static dir
 app.use(express.static("public"));
 
-//mongodb://heroku_z0j7bzpb:nu6gt7dk1av56tg1o66rpevhc9@ds133814.mlab.com:33814/heroku_z0j7bzpb
 // Database configuration with mongoose
-mongoose.connect("mongodb://heroku_c4qsr461:zxcvsdfer4@ds133814.mlab.com:33814/heroku_z0j7bzpb");
+mongoose.connect("mongodb://heroku_4wpnwjb0:31o31tml77s5r66pglr1aqh91f@ds141524.mlab.com:41524/heroku_4wpnwjb0");
 var db = mongoose.connection;
 
 // Show any mongoose errors
